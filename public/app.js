@@ -8,6 +8,7 @@ const state = {
   myLocation: null,
   members: [],
   messages: [],
+  peerLocation: null,
   followMe: true,
   mediaRecorder: null,
   audioChunks: [],
@@ -23,6 +24,7 @@ const els = {
   peerName: document.querySelector("#peerName"),
   distance: document.querySelector("#distance"),
   freshness: document.querySelector("#freshness"),
+  navigate: document.querySelector("#navigateButton"),
   messageList: document.querySelector("#messageList"),
   messageForm: document.querySelector("#messageForm"),
   messageInput: document.querySelector("#messageInput"),
@@ -103,6 +105,8 @@ function renderMembers(members) {
   const mine = members.find((member) => member.id === state.clientId);
   const others = members.filter((member) => member.id !== state.clientId && member.location);
   const peer = others[0];
+  state.peerLocation = peer?.location || null;
+  els.navigate.disabled = !state.peerLocation;
 
   if (peer) {
     els.peerName.textContent = peer.name;
@@ -127,6 +131,18 @@ function renderMembers(members) {
   if (state.followMe && mine?.location) {
     map.setView([mine.location.lat, mine.location.lng], Math.max(map.getZoom(), 15));
   }
+}
+
+function openNavigation() {
+  if (!state.peerLocation) {
+    setStatus("Hedef yok", true);
+    return;
+  }
+
+  const destination = `${state.peerLocation.lat},${state.peerLocation.lng}`;
+  const origin = state.myLocation ? `&origin=${state.myLocation.lat},${state.myLocation.lng}` : "";
+  const url = `https://www.google.com/maps/dir/?api=1${origin}&destination=${destination}&travelmode=driving`;
+  window.open(url, "_blank", "noopener");
 }
 
 function renderMessages(messages) {
@@ -424,6 +440,7 @@ window.addEventListener("pagehide", () => {
 });
 
 els.join.addEventListener("click", joinRoom);
+els.navigate.addEventListener("click", openNavigation);
 els.messageForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const text = els.messageInput.value.trim();

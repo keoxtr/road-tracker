@@ -172,7 +172,7 @@ button {
 
 .info-bar {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 1px;
   overflow: hidden;
 }
@@ -197,6 +197,22 @@ strong {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.route-button {
+  background: var(--accent);
+  border-radius: 8px;
+  color: #fff;
+  font-size: 0.9rem;
+  min-height: 34px;
+  padding: 0 10px;
+  width: 100%;
+}
+
+.route-button:disabled {
+  background: rgba(102, 112, 133, 0.2);
+  color: var(--muted);
+  cursor: not-allowed;
 }
 
 .car-marker {
@@ -354,7 +370,7 @@ strong {
   }
 
   .info-bar > div:first-child {
-    grid-column: 1 / -1;
+    grid-column: auto;
   }
 
   .message-list {
