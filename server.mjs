@@ -1,5 +1,4 @@
 import { createReadStream, existsSync } from "node:fs";
-import { readFile } from "node:fs/promises";
 import { createServer } from "node:http";
 import { extname, join, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -18,7 +17,9 @@ const mimeTypes = {
 };
 
 function getRoom(roomId) {
-  if (!rooms.has(roomId)) rooms.set(roomId, { members: new Map(), streams: new Set() });
+  if (!rooms.has(roomId)) {
+    rooms.set(roomId, { members: new Map(), messages: [], streams: new Set() });
+  }
   return rooms.get(roomId);
 }
 
@@ -30,6 +31,13 @@ function publicMembers(room) {
     location: member.location || null,
     updatedAt: member.updatedAt || null
   }));
+}
+
+function publicRoom(room) {
+  return {
+    members: publicMembers(room),
+    messages: room.messages.slice(-60)
+  };
 }
 
 function sendJson(res, status, data) {
@@ -49,7 +57,7 @@ async function readJson(req) {
 function broadcast(roomId) {
   const room = rooms.get(roomId);
   if (!room) return;
-  const data = `data: ${JSON.stringify(publicMembers(room))}\n\n`;
+  const data = `data: ${JSON.stringify(publicRoom(room))}\n\n`;
   for (const res of room.streams) res.write(data);
 }
 
@@ -98,7 +106,7 @@ const server = createServer(async (req, res) => {
         connection: "keep-alive",
         "x-accel-buffering": "no"
       });
-      res.write(`data: ${JSON.stringify(publicMembers(room))}\n\n`);
+      res.write(`data: ${JSON.stringify(publicRoom(room))}\n\n`);
       room.streams.add(res);
       req.on("close", () => room.streams.delete(res));
       return;
@@ -120,6 +128,50 @@ const server = createServer(async (req, res) => {
         location: room.members.get(String(body.id))?.location || null,
         updatedAt: room.members.get(String(body.id))?.updatedAt || null
       });
+      broadcast(roomId);
+      sendJson(res, 200, { ok: true });
+      return;
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/message") {
+      const body = await readJson(req);
+      const roomId = sanitizeRoom(body.roomId);
+      const room = rooms.get(roomId);
+      const member = room?.members.get(String(body.id));
+      if (!room || !member) {
+        sendJson(res, 404, { error: "member_not_found" });
+        return;
+      }
+
+      const type = body.type === "audio" ? "audio" : "text";
+      const text = String(body.text || "").trim().slice(0, 500);
+      const audio = String(body.audio || "");
+      const duration = Math.max(0, Math.min(120, Number(body.duration) || 0));
+
+      if (type === "text" && !text) {
+        sendJson(res, 400, { error: "empty_message" });
+        return;
+      }
+
+      if (type === "audio") {
+        if (!audio.startsWith("data:audio/") || audio.length > 900000) {
+          sendJson(res, 400, { error: "invalid_audio" });
+          return;
+        }
+      }
+
+      room.messages.push({
+        id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+        senderId: member.id,
+        senderName: member.name,
+        color: member.color,
+        type,
+        text: type === "text" ? text : "",
+        audio: type === "audio" ? audio : "",
+        duration,
+        createdAt: Date.now()
+      });
+      room.messages = room.messages.slice(-60);
       broadcast(roomId);
       sendJson(res, 200, { ok: true });
       return;

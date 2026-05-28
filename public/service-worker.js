@@ -1,4 +1,4 @@
-const CACHE_NAME = "road-tracker-v1";
+const CACHE_NAME = "road-tracker-v2";
 const SHELL = ["/", "/styles.css", "/app.js", "/manifest.webmanifest", "/icon.svg"];
 
 self.addEventListener("install", (event) => {

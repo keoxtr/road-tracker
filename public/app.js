@@ -7,7 +7,11 @@ const state = {
   color: localStorage.getItem("roadTrackerColor") || randomColor(),
   myLocation: null,
   members: [],
-  followMe: true
+  messages: [],
+  followMe: true,
+  mediaRecorder: null,
+  audioChunks: [],
+  recordingStartedAt: 0
 };
 
 const els = {
@@ -18,7 +22,12 @@ const els = {
   status: document.querySelector("#connectionStatus"),
   peerName: document.querySelector("#peerName"),
   distance: document.querySelector("#distance"),
-  freshness: document.querySelector("#freshness")
+  freshness: document.querySelector("#freshness"),
+  messageList: document.querySelector("#messageList"),
+  messageForm: document.querySelector("#messageForm"),
+  messageInput: document.querySelector("#messageInput"),
+  record: document.querySelector("#recordButton"),
+  recordingStatus: document.querySelector("#recordingStatus")
 };
 
 els.room.value = localStorage.getItem("roadTrackerRoom") || "TATIL2026";
@@ -120,6 +129,64 @@ function renderMembers(members) {
   }
 }
 
+function renderMessages(messages) {
+  state.messages = messages;
+  els.messageList.textContent = "";
+
+  if (!messages.length) {
+    const empty = document.createElement("div");
+    empty.className = "message-empty";
+    empty.textContent = "Henüz mesaj yok";
+    els.messageList.append(empty);
+    return;
+  }
+
+  for (const message of messages) {
+    const item = document.createElement("article");
+    item.className = `message${message.senderId === state.clientId ? " mine" : ""}`;
+
+    const meta = document.createElement("div");
+    meta.className = "message-meta";
+
+    const dot = document.createElement("span");
+    dot.className = "message-dot";
+    dot.style.background = message.color || "#006d77";
+
+    const sender = document.createElement("span");
+    sender.textContent = `${message.senderName || "Araç"} - ${formatClock(message.createdAt)}`;
+
+    meta.append(dot, sender);
+    item.append(meta);
+
+    if (message.type === "audio") {
+      const audio = document.createElement("audio");
+      audio.controls = true;
+      audio.preload = "metadata";
+      audio.src = message.audio;
+      item.append(audio);
+    } else {
+      const text = document.createElement("div");
+      text.className = "message-text";
+      text.textContent = message.text;
+      item.append(text);
+    }
+
+    els.messageList.append(item);
+  }
+
+  els.messageList.scrollTop = els.messageList.scrollHeight;
+}
+
+function renderRoom(payload) {
+  if (Array.isArray(payload)) {
+    renderMembers(payload);
+    return;
+  }
+
+  renderMembers(payload.members || []);
+  renderMessages(payload.messages || []);
+}
+
 function distanceMeters(a, b) {
   const radius = 6371000;
   const toRad = (value) => (value * Math.PI) / 180;
@@ -144,6 +211,14 @@ function formatFreshness(timestamp) {
   if (seconds < 10) return "Simdi";
   if (seconds < 60) return `${seconds} sn`;
   return `${Math.round(seconds / 60)} dk`;
+}
+
+function formatClock(timestamp) {
+  if (!timestamp) return "";
+  return new Date(timestamp).toLocaleTimeString("tr-TR", {
+    hour: "2-digit",
+    minute: "2-digit"
+  });
 }
 
 function startGeolocation() {
@@ -201,6 +276,23 @@ async function sendLocation(location) {
   }
 }
 
+async function sendMessage(payload) {
+  if (!state.roomId) {
+    setStatus("Once baslat", true);
+    return;
+  }
+
+  try {
+    await postJson("/api/message", {
+      roomId: state.roomId,
+      id: state.clientId,
+      ...payload
+    });
+  } catch {
+    setStatus("Mesaj gidemedi", true);
+  }
+}
+
 function openStream() {
   if (state.eventSource) state.eventSource.close();
 
@@ -209,7 +301,7 @@ function openStream() {
   state.eventSource.onerror = () => setStatus("Baglanti bekliyor", true);
   state.eventSource.onmessage = (event) => {
     try {
-      renderMembers(JSON.parse(event.data));
+      renderRoom(JSON.parse(event.data));
     } catch {
       setStatus("Veri okunamadi", true);
     }
@@ -242,6 +334,67 @@ async function joinRoom() {
   }
 }
 
+async function startRecording() {
+  if (!state.roomId) {
+    setStatus("Once baslat", true);
+    return;
+  }
+
+  if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
+    setStatus("Mikrofon yok", true);
+    return;
+  }
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    state.audioChunks = [];
+    state.recordingStartedAt = Date.now();
+    state.mediaRecorder = new MediaRecorder(stream);
+
+    state.mediaRecorder.addEventListener("dataavailable", (event) => {
+      if (event.data.size) state.audioChunks.push(event.data);
+    });
+
+    state.mediaRecorder.addEventListener("stop", async () => {
+      stream.getTracks().forEach((track) => track.stop());
+      els.record.classList.remove("recording");
+      els.recordingStatus.textContent = "Gonderiliyor";
+
+      const blob = new Blob(state.audioChunks, { type: state.mediaRecorder.mimeType || "audio/webm" });
+      const duration = Math.round((Date.now() - state.recordingStartedAt) / 1000);
+      if (blob.size < 800) {
+        els.recordingStatus.textContent = "Hazir";
+        return;
+      }
+
+      const audio = await blobToDataUrl(blob);
+      await sendMessage({ type: "audio", audio, duration });
+      els.recordingStatus.textContent = "Hazir";
+    });
+
+    state.mediaRecorder.start();
+    els.record.classList.add("recording");
+    els.recordingStatus.textContent = "Kayit";
+  } catch {
+    setStatus("Mikrofon izni gerekli", true);
+  }
+}
+
+function stopRecording() {
+  if (state.mediaRecorder?.state === "recording") {
+    state.mediaRecorder.stop();
+  }
+}
+
+function blobToDataUrl(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
 window.addEventListener("pagehide", () => {
   if (!state.roomId) return;
   navigator.sendBeacon?.(
@@ -253,6 +406,21 @@ window.addEventListener("pagehide", () => {
 });
 
 els.join.addEventListener("click", joinRoom);
+els.messageForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const text = els.messageInput.value.trim();
+  if (!text) return;
+
+  els.messageInput.value = "";
+  await sendMessage({ type: "text", text });
+});
+els.record.addEventListener("pointerdown", (event) => {
+  event.preventDefault();
+  startRecording();
+});
+els.record.addEventListener("pointerup", stopRecording);
+els.record.addEventListener("pointercancel", stopRecording);
+els.record.addEventListener("pointerleave", stopRecording);
 els.center.addEventListener("click", () => {
   state.followMe = true;
   if (state.myLocation) map.setView([state.myLocation.lat, state.myLocation.lng], 16);

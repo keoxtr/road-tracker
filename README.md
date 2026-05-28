@@ -28,5 +28,6 @@ Render ayari: `render.yaml`
 2. Ayni oda kodunu yazin. Ornek: `TATIL2026`
 3. Arac adini yazin ve `Takibi baslat` butonuna basin.
 4. Tarayici konum izni isterse izin verin.
+5. Sohbet alanindan yazi gonderin veya `Mic` dugmesine basili tutarak sesli mesaj kaydedin.
 
 Oda kodunu bilen herkes o odaya girebilir. Tatil bitince kodu kullanmayin veya uygulamayi kapatin.

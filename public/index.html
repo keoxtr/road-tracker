@@ -50,6 +50,22 @@
           <strong id="freshness">-</strong>
         </div>
       </section>
+
+      <section class="chat-panel" aria-label="Sohbet">
+        <div class="chat-head">
+          <div>
+            <span class="label">Sohbet</span>
+            <strong>Yol mesajları</strong>
+          </div>
+          <span id="recordingStatus">Hazır</span>
+        </div>
+        <div class="message-list" id="messageList" aria-live="polite"></div>
+        <form class="message-form" id="messageForm">
+          <input id="messageInput" autocomplete="off" maxlength="500" placeholder="Mesaj yaz..." />
+          <button id="recordButton" class="icon-button" type="button" title="Basılı tut ve ses kaydet">Mic</button>
+          <button id="sendButton" type="submit">Gönder</button>
+        </form>
+      </section>
     </main>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
