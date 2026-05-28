@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#101820" />
+    <title>Yol Takip</title>
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="top-panel" aria-label="Bağlantı ayarları">
+        <div>
+          <p class="eyebrow">Yol Takip</p>
+          <h1>İki araç aynı odada kalsın.</h1>
+        </div>
+        <div class="status-pill" id="connectionStatus">Hazır</div>
+      </section>
+
+      <section class="controls" aria-label="Oda ve araç bilgileri">
+        <label>
+          Oda kodu
+          <input id="roomInput" autocomplete="off" maxlength="18" placeholder="TATIL2026" />
+        </label>
+        <label>
+          Araç adı
+          <input id="nameInput" autocomplete="name" maxlength="28" placeholder="Araç 1" />
+        </label>
+        <button id="joinButton" type="button">Takibi başlat</button>
+      </section>
+
+      <section class="map-wrap" aria-label="Harita">
+        <div id="map"></div>
+        <button id="centerButton" class="floating-button" type="button" title="Konumuma dön">⌖</button>
+      </section>
+
+      <section class="info-bar" aria-live="polite">
+        <div>
+          <span class="label">Diğer araç</span>
+          <strong id="peerName">Bekleniyor</strong>
+        </div>
+        <div>
+          <span class="label">Mesafe</span>
+          <strong id="distance">-</strong>
+        </div>
+        <div>
+          <span class="label">Güncelleme</span>
+          <strong id="freshness">-</strong>
+        </div>
+      </section>
+    </main>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+    <script src="/app.js"></script>
+  </body>
+</html>
