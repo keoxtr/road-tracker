@@ -125,6 +125,10 @@ button {
   border: 0;
   cursor: pointer;
   font-weight: 900;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
 }
 
 #joinButton {
@@ -312,6 +316,8 @@ strong {
   color: var(--accent);
   min-width: 56px;
   padding: 0 10px;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .icon-button.recording {

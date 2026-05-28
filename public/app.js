@@ -358,6 +358,7 @@ async function startRecording() {
     state.mediaRecorder.addEventListener("stop", async () => {
       stream.getTracks().forEach((track) => track.stop());
       els.record.classList.remove("recording");
+      els.record.textContent = "Ses";
       els.recordingStatus.textContent = "Gonderiliyor";
 
       const blob = new Blob(state.audioChunks, { type: state.mediaRecorder.mimeType || "audio/webm" });
@@ -374,16 +375,33 @@ async function startRecording() {
 
     state.mediaRecorder.start();
     els.record.classList.add("recording");
+    els.record.textContent = "Bitir";
     els.recordingStatus.textContent = "Kayit";
   } catch {
     setStatus("Mikrofon izni gerekli", true);
   }
 }
 
+function isRecording() {
+  return state.mediaRecorder?.state === "recording";
+}
+
 function stopRecording() {
-  if (state.mediaRecorder?.state === "recording") {
+  if (isRecording()) {
     state.mediaRecorder.stop();
   }
+}
+
+function toggleRecording(event) {
+  event.preventDefault();
+  els.messageInput.blur();
+
+  if (isRecording()) {
+    stopRecording();
+    return;
+  }
+
+  startRecording();
 }
 
 function blobToDataUrl(blob) {
@@ -414,13 +432,8 @@ els.messageForm.addEventListener("submit", async (event) => {
   els.messageInput.value = "";
   await sendMessage({ type: "text", text });
 });
-els.record.addEventListener("pointerdown", (event) => {
-  event.preventDefault();
-  startRecording();
-});
-els.record.addEventListener("pointerup", stopRecording);
-els.record.addEventListener("pointercancel", stopRecording);
-els.record.addEventListener("pointerleave", stopRecording);
+els.record.addEventListener("click", toggleRecording);
+els.record.addEventListener("contextmenu", (event) => event.preventDefault());
 els.center.addEventListener("click", () => {
   state.followMe = true;
   if (state.myLocation) map.setView([state.myLocation.lat, state.myLocation.lng], 16);
