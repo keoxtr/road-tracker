@@ -8,6 +8,9 @@ const state = {
   myLocation: null,
   members: [],
   messages: [],
+  knownMessageIds: new Set(),
+  messagesReady: false,
+  toastTimer: null,
   peerLocation: null,
   followMe: true,
   mediaRecorder: null,
@@ -22,8 +25,12 @@ const els = {
   center: document.querySelector("#centerButton"),
   status: document.querySelector("#connectionStatus"),
   install: document.querySelector("#installButton"),
+  notify: document.querySelector("#notifyButton"),
   installPanel: document.querySelector("#installPanel"),
   installText: document.querySelector("#installText"),
+  toast: document.querySelector("#messageToast"),
+  toastTitle: document.querySelector("#toastTitle"),
+  toastText: document.querySelector("#toastText"),
   peerName: document.querySelector("#peerName"),
   distance: document.querySelector("#distance"),
   freshness: document.querySelector("#freshness"),
@@ -68,6 +75,41 @@ function randomColor() {
 function setStatus(text, isError = false) {
   els.status.textContent = text;
   els.status.classList.toggle("error", isError);
+}
+
+function updateNotificationUi() {
+  if (!("Notification" in window)) {
+    els.notify.textContent = "Bildirim yok";
+    els.notify.disabled = true;
+    return;
+  }
+
+  if (Notification.permission === "granted") {
+    els.notify.textContent = "Bildirim açık";
+    els.notify.classList.add("enabled");
+    return;
+  }
+
+  els.notify.textContent = "Bildirim";
+  els.notify.classList.remove("enabled");
+}
+
+async function enableNotifications() {
+  if (!("Notification" in window)) {
+    setStatus("Bildirim yok", true);
+    return;
+  }
+
+  if (Notification.permission === "default") {
+    await Notification.requestPermission();
+  }
+
+  updateNotificationUi();
+  if (Notification.permission === "granted") {
+    setStatus("Bildirim açık");
+  } else {
+    setStatus("Bildirim kapalı", true);
+  }
 }
 
 function isStandalone() {
@@ -203,6 +245,7 @@ function openNavigation() {
 }
 
 function renderMessages(messages) {
+  notifyNewMessages(messages);
   state.messages = messages;
   els.messageList.textContent = "";
 
@@ -248,6 +291,64 @@ function renderMessages(messages) {
   }
 
   els.messageList.scrollTop = els.messageList.scrollHeight;
+}
+
+function notifyNewMessages(messages) {
+  const newMessages = messages.filter((message) => {
+    return !state.knownMessageIds.has(message.id) && message.senderId !== state.clientId;
+  });
+
+  state.knownMessageIds = new Set(messages.map((message) => message.id));
+  if (!state.messagesReady) {
+    state.messagesReady = true;
+    return;
+  }
+
+  for (const message of newMessages) {
+    showMessageAlert(message);
+  }
+}
+
+function messagePreview(message) {
+  if (message.type === "audio") return "Sesli mesaj gönderdi";
+  return message.text || "Yeni mesaj";
+}
+
+async function showMessageAlert(message) {
+  const title = `${message.senderName || "Araç"} mesaj gönderdi`;
+  const body = messagePreview(message);
+
+  els.toastTitle.textContent = title;
+  els.toastText.textContent = body;
+  els.toast.hidden = false;
+  window.clearTimeout(state.toastTimer);
+  state.toastTimer = window.setTimeout(() => {
+    els.toast.hidden = true;
+  }, 7000);
+
+  navigator.vibrate?.([180, 80, 180]);
+
+  if ("Notification" in window && Notification.permission === "granted") {
+    const options = {
+      body,
+      tag: `road-tracker-${message.id}`,
+      icon: "/icon.svg",
+      badge: "/icon.svg",
+      data: { url: location.href }
+    };
+
+    const registration = await navigator.serviceWorker?.ready?.catch(() => null);
+    if (registration?.showNotification) {
+      registration.showNotification(title, options);
+    } else {
+      new Notification(title, options);
+    }
+  }
+}
+
+function focusChat() {
+  els.toast.hidden = true;
+  document.querySelector(".chat-panel")?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 function renderRoom(payload) {
@@ -498,7 +599,9 @@ window.addEventListener("pagehide", () => {
 
 els.join.addEventListener("click", joinRoom);
 els.install.addEventListener("click", installApp);
+els.notify.addEventListener("click", enableNotifications);
 els.navigate.addEventListener("click", openNavigation);
+els.toast.addEventListener("click", focusChat);
 els.messageForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const text = els.messageInput.value.trim();
@@ -535,3 +638,4 @@ window.addEventListener("appinstalled", () => {
 });
 
 updateInstallUi();
+updateNotificationUi();
