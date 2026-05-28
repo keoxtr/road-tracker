@@ -1,15 +1,19 @@
 {
+  "id": "/",
   "name": "Yol Takip",
   "short_name": "Yol Takip",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#101820",
   "theme_color": "#101820",
+  "description": "Iki aracin yol boyunca birbirini takip etmesi, sohbet etmesi ve rota acmasi icin uygulama.",
   "icons": [
     {
       "src": "/icon.svg",
       "sizes": "any",
-      "type": "image/svg+xml"
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
     }
   ]
 }

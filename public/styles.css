@@ -32,12 +32,13 @@ input {
 .app-shell {
   min-height: 100%;
   display: grid;
-  grid-template-rows: auto auto minmax(320px, 1fr) auto auto;
+  grid-template-rows: auto auto auto minmax(320px, 1fr) auto auto;
   gap: 10px;
   padding: max(14px, env(safe-area-inset-top)) 12px max(14px, env(safe-area-inset-bottom));
 }
 
 .top-panel,
+.install-panel,
 .controls,
 .info-bar,
 .chat-panel {
@@ -82,6 +83,44 @@ h1 {
   font-weight: 800;
   min-height: 34px;
   padding: 0 12px;
+}
+
+.top-actions {
+  align-items: center;
+  display: flex;
+  flex: 0 0 auto;
+  gap: 8px;
+}
+
+.install-button {
+  background: var(--ink);
+  border-radius: 999px;
+  color: #fff;
+  min-height: 34px;
+  padding: 0 13px;
+}
+
+.install-button.installed {
+  background: rgba(102, 112, 133, 0.2);
+  color: var(--muted);
+}
+
+.install-panel {
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+}
+
+.install-panel[hidden] {
+  display: none;
+}
+
+.install-panel p {
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1.35;
+  margin: 0;
 }
 
 .status-pill.error {
@@ -350,11 +389,16 @@ strong {
 
 @media (max-width: 720px) {
   .app-shell {
-    grid-template-rows: auto auto minmax(330px, 1fr) auto auto;
+    grid-template-rows: auto auto auto minmax(330px, 1fr) auto auto;
   }
 
   .top-panel {
     align-items: flex-start;
+  }
+
+  .top-actions {
+    align-items: flex-end;
+    flex-direction: column;
   }
 
   .controls {

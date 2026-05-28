@@ -5,9 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#101820" />
     <title>Yol Takip</title>
-    <link rel="manifest" href="/manifest.webmanifest?v=5" />
+    <link rel="manifest" href="/manifest.webmanifest?v=6" />
+    <link rel="apple-touch-icon" href="/icon.svg" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
-    <link rel="stylesheet" href="/styles.css?v=5" />
+    <link rel="stylesheet" href="/styles.css?v=6" />
   </head>
   <body>
     <main class="app-shell">
@@ -16,7 +17,15 @@
           <p class="eyebrow">Yol Takip</p>
           <h1>İki araç aynı odada kalsın.</h1>
         </div>
-        <div class="status-pill" id="connectionStatus">Hazır</div>
+        <div class="top-actions">
+          <button id="installButton" class="install-button" type="button">Kur</button>
+          <div class="status-pill" id="connectionStatus">Hazır</div>
+        </div>
+      </section>
+
+      <section class="install-panel" id="installPanel" hidden>
+        <strong>Telefona kur</strong>
+        <p id="installText">Bu uygulamayı ana ekrana ekleyip normal uygulama gibi açabilirsiniz.</p>
       </section>
 
       <section class="controls" aria-label="Oda ve araç bilgileri">
@@ -73,6 +82,6 @@
     </main>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-    <script src="/app.js?v=5"></script>
+    <script src="/app.js?v=6"></script>
   </body>
 </html>

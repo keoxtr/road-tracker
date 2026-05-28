@@ -21,6 +21,9 @@ const els = {
   join: document.querySelector("#joinButton"),
   center: document.querySelector("#centerButton"),
   status: document.querySelector("#connectionStatus"),
+  install: document.querySelector("#installButton"),
+  installPanel: document.querySelector("#installPanel"),
+  installText: document.querySelector("#installText"),
   peerName: document.querySelector("#peerName"),
   distance: document.querySelector("#distance"),
   freshness: document.querySelector("#freshness"),
@@ -36,6 +39,8 @@ els.room.value = localStorage.getItem("roadTrackerRoom") || "TATIL2026";
 els.name.value = localStorage.getItem("roadTrackerName") || `Arac ${Math.floor(Math.random() * 90 + 10)}`;
 localStorage.setItem("roadTrackerColor", state.color);
 localStorage.setItem("roadTrackerClientId", state.clientId);
+
+let installPrompt = null;
 
 const map = L.map("map", {
   zoomControl: false
@@ -63,6 +68,58 @@ function randomColor() {
 function setStatus(text, isError = false) {
   els.status.textContent = text;
   els.status.classList.toggle("error", isError);
+}
+
+function isStandalone() {
+  return window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+}
+
+function isIos() {
+  return /iphone|ipad|ipod/i.test(navigator.userAgent);
+}
+
+function updateInstallUi() {
+  if (isStandalone()) {
+    els.install.textContent = "Kurulu";
+    els.install.classList.add("installed");
+    els.installPanel.hidden = true;
+    return;
+  }
+
+  els.install.classList.remove("installed");
+  els.install.textContent = "Kur";
+}
+
+function showInstallHelp() {
+  els.installPanel.hidden = false;
+  if (installPrompt) {
+    els.installText.textContent = "Açılan pencerede Yükle seçeneğine basın. Sonra uygulama telefonunuzun ana ekranına gelir.";
+    return;
+  }
+
+  if (isIos()) {
+    els.installText.textContent = "iPhone için Safari'de paylaş düğmesine basın, ardından Ana Ekrana Ekle seçeneğini seçin.";
+    return;
+  }
+
+  els.installText.textContent = "Tarayıcı menüsünden Ana ekrana ekle veya Uygulamayı yükle seçeneğini seçin.";
+}
+
+async function installApp() {
+  if (isStandalone()) {
+    showInstallHelp();
+    return;
+  }
+
+  if (!installPrompt) {
+    showInstallHelp();
+    return;
+  }
+
+  installPrompt.prompt();
+  await installPrompt.userChoice.catch(() => null);
+  installPrompt = null;
+  updateInstallUi();
 }
 
 function makeIcon(member) {
@@ -440,6 +497,7 @@ window.addEventListener("pagehide", () => {
 });
 
 els.join.addEventListener("click", joinRoom);
+els.install.addEventListener("click", installApp);
 els.navigate.addEventListener("click", openNavigation);
 els.messageForm.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -464,3 +522,16 @@ setInterval(() => renderMembers(state.members), 5000);
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("/service-worker.js").catch(() => {});
 }
+
+window.addEventListener("beforeinstallprompt", (event) => {
+  event.preventDefault();
+  installPrompt = event;
+  updateInstallUi();
+});
+
+window.addEventListener("appinstalled", () => {
+  installPrompt = null;
+  updateInstallUi();
+});
+
+updateInstallUi();

@@ -1,5 +1,5 @@
-const CACHE_NAME = "road-tracker-v5";
-const SHELL = ["/", "/styles.css", "/app.js", "/manifest.webmanifest", "/icon.svg"];
+const CACHE_NAME = "road-tracker-v6";
+const SHELL = ["/", "/styles.css?v=6", "/app.js?v=6", "/manifest.webmanifest?v=6", "/icon.svg"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(SHELL)));
